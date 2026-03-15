@@ -20,6 +20,8 @@ use rust_serialization_benchmark::bench_cbor4ii;
 #[cfg(feature = "ciborium")]
 use rust_serialization_benchmark::bench_ciborium;
 #[cfg(feature = "columnar")]
+use columnar::Index as _;
+#[cfg(feature = "columnar")]
 use rust_serialization_benchmark::bench_columnar;
 #[cfg(feature = "databuf")]
 use rust_serialization_benchmark::bench_databuf;
@@ -134,7 +136,20 @@ fn bench_log(c: &mut Criterion) {
     bench_ciborium::bench(BENCH, c, &data);
 
     #[cfg(feature = "columnar")]
-    bench_columnar::bench(BENCH, c, &data);
+    bench_columnar::bench(BENCH, c, &data, |decoded| {
+        let logs = decoded.logs.get(0);
+        for i in 0..logs.len() {
+            let idx = logs.lower + i;
+            black_box((
+                logs.slice.address.x0[idx],
+                logs.slice.address.x1[idx],
+                logs.slice.address.x2[idx],
+                logs.slice.address.x3[idx],
+                logs.slice.code[idx],
+                logs.slice.size[idx],
+            ));
+        }
+    });
 
     #[cfg(feature = "databuf")]
     bench_databuf::bench_borrowable(BENCH, c, &data);
@@ -354,7 +369,17 @@ fn bench_mesh(c: &mut Criterion) {
     bench_ciborium::bench(BENCH, c, &data);
 
     #[cfg(feature = "columnar")]
-    bench_columnar::bench(BENCH, c, &data);
+    bench_columnar::bench(BENCH, c, &data, |decoded| {
+        let triangles = decoded.triangles.get(0);
+        for i in 0..triangles.len() {
+            let idx = triangles.lower + i;
+            black_box((
+                triangles.slice.normal.x[idx],
+                triangles.slice.normal.y[idx],
+                triangles.slice.normal.z[idx],
+            ));
+        }
+    });
 
     #[cfg(feature = "databuf")]
     bench_databuf::bench(BENCH, c, &data);
@@ -558,7 +583,12 @@ fn bench_minecraft_savedata(c: &mut Criterion) {
     bench_ciborium::bench(BENCH, c, &data);
 
     #[cfg(feature = "columnar")]
-    bench_columnar::bench(BENCH, c, &data);
+    bench_columnar::bench(BENCH, c, &data, |decoded| {
+        let players = decoded.players.get(0);
+        for i in 0..players.len() {
+            black_box(players.slice.game_type.get(players.lower + i));
+        }
+    });
 
     #[cfg(feature = "databuf")]
     bench_databuf::bench_borrowable(BENCH, c, &data);
@@ -772,7 +802,12 @@ fn bench_mk48(c: &mut Criterion) {
     bench_ciborium::bench(BENCH, c, &data);
 
     #[cfg(feature = "columnar")]
-    bench_columnar::bench(BENCH, c, &data);
+    bench_columnar::bench(BENCH, c, &data, |decoded| {
+        let updates = decoded.updates.get(0);
+        for i in 0..updates.len() {
+            black_box(updates.slice.score[updates.lower + i]);
+        }
+    });
 
     #[cfg(feature = "databuf")]
     bench_databuf::bench(BENCH, c, &data);

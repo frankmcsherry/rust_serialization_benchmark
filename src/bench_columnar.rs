@@ -1,11 +1,15 @@
 use columnar::{
     bytemuck,
-    bytes::{EncodeDecode, Indexed},
+    bytes::indexed,
     Borrow, Clear, Columnar, FromBytes, Index, Push,
 };
 use criterion::{black_box, Criterion};
 
-pub fn bench<T: Columnar + PartialEq>(name: &'static str, c: &mut Criterion, data: &T) {
+pub fn bench<T, R>(name: &'static str, c: &mut Criterion, data: &T, read: R)
+where
+    T: Columnar + PartialEq,
+    R: Fn(<<T as Columnar>::Container as Borrow>::Borrowed<'_>),
+{
     let mut group = c.benchmark_group(format!("{}/columnar", name));
 
     let mut buffer = Vec::default();
@@ -15,7 +19,7 @@ pub fn bench<T: Columnar + PartialEq>(name: &'static str, c: &mut Criterion, dat
             columns.clear();
             columns.push(data);
             buffer.clear();
-            Indexed::encode(&mut buffer, &columns.borrow());
+            indexed::encode(&mut buffer, &columns.borrow());
             black_box(());
         })
     });
@@ -28,55 +32,58 @@ pub fn bench<T: Columnar + PartialEq>(name: &'static str, c: &mut Criterion, dat
     group.bench_function("serialize (SoA)", |b| {
         b.iter(|| {
             buffer.clear();
-            Indexed::encode(&mut buffer, &columns.borrow());
+            indexed::encode(&mut buffer, &columns.borrow());
             black_box(());
         })
     });
 
     buffer.clear();
-    Indexed::encode(&mut buffer, &columns.borrow());
+    indexed::encode(&mut buffer, &columns.borrow());
 
     group.bench_function("access", |b| {
         b.iter(|| {
-            let decoded =
-                <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::from_bytes(
-                    &mut Indexed::decode(&buffer),
-                );
+            let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(black_box(&buffer));
             black_box(decoded);
+        })
+    });
+
+    group.bench_function("read", |b| {
+        b.iter(|| {
+            let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(black_box(&buffer));
+            read(decoded);
+        })
+    });
+
+    group.bench_function("read (validated)", |b| {
+        b.iter(|| {
+            indexed::validate_structure(black_box(&buffer), <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::SLICE_COUNT).unwrap();
+            let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(black_box(&buffer));
+            read(decoded);
         })
     });
 
     group.bench_function("deserialize", |b| {
         b.iter(|| {
-            let decoded =
-                <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::from_bytes(
-                    &mut Indexed::decode(&buffer),
-                );
+            let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(&buffer);
             black_box(<T as Columnar>::into_owned(decoded.get(0)));
         })
     });
 
-    let decoded = <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::from_bytes(
-        &mut Indexed::decode(&buffer),
-    );
+    let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(&buffer);
     let mut deser: T = <T as Columnar>::into_owned(decoded.get(0));
 
     // Deserialize into an existing instance, to avoid benchmarking the allocator.
     group.bench_function("deserialize (copy_from)", |b| {
         b.iter(|| {
-            let decoded =
-                <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::from_bytes(
-                    &mut Indexed::decode(&buffer),
-                );
+            let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(&buffer);
             deser.copy_from(decoded.get(0));
             black_box(&deser);
         })
     });
     crate::bench_size(name, "columnar", bytemuck::cast_slice(&buffer));
 
-    let decoded = <<<T as Columnar>::Container as Borrow>::Borrowed<'_> as FromBytes>::from_bytes(
-        &mut Indexed::decode(&buffer),
-    );
+    let decoded: <<T as Columnar>::Container as Borrow>::Borrowed<'_> = indexed::decode(&buffer);
+
     let deser: T = <T as Columnar>::into_owned(decoded.get(0));
     assert!(data == &deser);
 
