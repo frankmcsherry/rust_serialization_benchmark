@@ -121,9 +121,8 @@ fn bench_log(c: &mut Criterion) {
             .get_root::<rust_serialization_benchmark::datasets::log::cp::logs::Reader>()
             .unwrap();
         for log in data.get_logs().unwrap().iter() {
-            black_box(log.get_address().unwrap());
-            black_box(log.get_code());
-            black_box(log.get_size());
+            let addr = log.get_address().unwrap();
+            black_box((addr.get_x0(), addr.get_x1(), addr.get_x2(), addr.get_x3(), log.get_code(), log.get_size()));
         }
     });
 
@@ -152,9 +151,8 @@ fn bench_log(c: &mut Criterion) {
                 rust_serialization_benchmark::datasets::log::fb::Logs,
             >(bytes);
             for log in data.logs().iter() {
-                black_box(log.address());
-                black_box(log.code());
-                black_box(log.size());
+                let addr = log.address().unwrap();
+                black_box((addr.x0(), addr.x1(), addr.x2(), addr.x3(), log.code(), log.size()));
             }
         },
         |bytes| {
@@ -162,9 +160,8 @@ fn bench_log(c: &mut Criterion) {
                 flatbuffers::root::<rust_serialization_benchmark::datasets::log::fb::Logs>(bytes)
                     .unwrap();
             for log in data.logs().iter() {
-                black_box(log.address());
-                black_box(log.code());
-                black_box(log.size());
+                let addr = log.address().unwrap();
+                black_box((addr.x0(), addr.x1(), addr.x2(), addr.x3(), log.code(), log.size()));
             }
         },
     );
@@ -188,9 +185,7 @@ fn bench_log(c: &mut Criterion) {
         &data,
         |logs| {
             for log in logs.logs.iter() {
-                black_box(&log.address);
-                black_box(log.code);
-                black_box(log.size);
+                black_box((log.address.x0, log.address.x1, log.address.x2, log.address.x3, log.code, log.size));
             }
         },
         |log| {
@@ -227,9 +222,7 @@ fn bench_log(c: &mut Criterion) {
         &data,
         |logs| {
             for log in logs.logs.iter() {
-                black_box(&log.address);
-                black_box(log.code);
-                black_box(log.size);
+                black_box((log.address.x0, log.address.x1, log.address.x2, log.address.x3, log.code, log.size));
             }
         },
         |log| {
@@ -343,7 +336,8 @@ fn bench_mesh(c: &mut Criterion) {
             .get_root::<rust_serialization_benchmark::datasets::mesh::cp::mesh::Reader>()
             .unwrap();
         for triangle in data.get_triangles().unwrap().iter() {
-            black_box(triangle.get_normal().unwrap());
+            let n = triangle.get_normal().unwrap();
+            black_box((n.get_x(), n.get_y(), n.get_z()));
         }
     });
 
@@ -372,7 +366,8 @@ fn bench_mesh(c: &mut Criterion) {
                 rust_serialization_benchmark::datasets::mesh::fb::Mesh,
             >(bytes);
             for triangle in data.triangles().iter() {
-                black_box(triangle.normal());
+                let n = triangle.normal();
+                black_box((n.x(), n.y(), n.z()));
             }
         },
         |bytes| {
@@ -380,7 +375,8 @@ fn bench_mesh(c: &mut Criterion) {
                 flatbuffers::root::<rust_serialization_benchmark::datasets::mesh::fb::Mesh>(bytes)
                     .unwrap();
             for triangle in data.triangles().iter() {
-                black_box(triangle.normal());
+                let n = triangle.normal();
+                black_box((n.x(), n.y(), n.z()));
             }
         },
     );
@@ -404,7 +400,7 @@ fn bench_mesh(c: &mut Criterion) {
         &data,
         |mesh| {
             for triangle in mesh.triangles.iter() {
-                black_box(&triangle.normal);
+                black_box((triangle.normal.x, triangle.normal.y, triangle.normal.z));
             }
         },
         |mesh| {
@@ -438,7 +434,7 @@ fn bench_mesh(c: &mut Criterion) {
         &data,
         |mesh| {
             for triangle in mesh.triangles.iter() {
-                black_box(&triangle.normal);
+                black_box((triangle.normal.x, triangle.normal.y, triangle.normal.z));
             }
         },
         |mesh| {
@@ -609,7 +605,8 @@ fn bench_minecraft_savedata(c: &mut Criterion) {
         &data,
         |players| {
             for player in players.players.iter() {
-                black_box(&player.game_type);
+                // Read the discriminant byte rather than taking a reference
+                black_box(unsafe { *((&player.game_type) as *const _ as *const u8) });
             }
         },
         |players| {
@@ -647,7 +644,8 @@ fn bench_minecraft_savedata(c: &mut Criterion) {
         &data,
         |players| {
             for player in players.players.iter() {
-                black_box(&player.game_type);
+                // Read the discriminant byte rather than taking a reference
+                black_box(unsafe { *((&player.game_type) as *const _ as *const u8) });
             }
         },
         |players| {
