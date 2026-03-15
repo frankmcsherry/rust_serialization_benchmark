@@ -122,7 +122,14 @@ fn bench_log(c: &mut Criterion) {
             .unwrap();
         for log in data.get_logs().unwrap().iter() {
             let addr = log.get_address().unwrap();
-            black_box((addr.get_x0(), addr.get_x1(), addr.get_x2(), addr.get_x3(), log.get_code(), log.get_size()));
+            black_box((
+                addr.get_x0(),
+                addr.get_x1(),
+                addr.get_x2(),
+                addr.get_x3(),
+                log.get_code(),
+                log.get_size(),
+            ));
         }
     });
 
@@ -152,7 +159,14 @@ fn bench_log(c: &mut Criterion) {
             >(bytes);
             for log in data.logs().iter() {
                 let addr = log.address().unwrap();
-                black_box((addr.x0(), addr.x1(), addr.x2(), addr.x3(), log.code(), log.size()));
+                black_box((
+                    addr.x0(),
+                    addr.x1(),
+                    addr.x2(),
+                    addr.x3(),
+                    log.code(),
+                    log.size(),
+                ));
             }
         },
         |bytes| {
@@ -161,7 +175,14 @@ fn bench_log(c: &mut Criterion) {
                     .unwrap();
             for log in data.logs().iter() {
                 let addr = log.address().unwrap();
-                black_box((addr.x0(), addr.x1(), addr.x2(), addr.x3(), log.code(), log.size()));
+                black_box((
+                    addr.x0(),
+                    addr.x1(),
+                    addr.x2(),
+                    addr.x3(),
+                    log.code(),
+                    log.size(),
+                ));
             }
         },
     );
@@ -185,7 +206,14 @@ fn bench_log(c: &mut Criterion) {
         &data,
         |logs| {
             for log in logs.logs.iter() {
-                black_box((log.address.x0, log.address.x1, log.address.x2, log.address.x3, log.code, log.size));
+                black_box((
+                    log.address.x0,
+                    log.address.x1,
+                    log.address.x2,
+                    log.address.x3,
+                    log.code,
+                    log.size,
+                ));
             }
         },
         |log| {
@@ -222,7 +250,14 @@ fn bench_log(c: &mut Criterion) {
         &data,
         |logs| {
             for log in logs.logs.iter() {
-                black_box((log.address.x0, log.address.x1, log.address.x2, log.address.x3, log.code, log.size));
+                black_box((
+                    log.address.x0,
+                    log.address.x1,
+                    log.address.x2,
+                    log.address.x3,
+                    log.code,
+                    log.size,
+                ));
             }
         },
         |log| {
